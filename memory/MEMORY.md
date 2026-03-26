@@ -1,0 +1,2 @@
+- [User Profile](user_profile.md) — Yael Lyshkow, CS/AI student U of T, iterative feedback style
+- [Portfolio Project](project_portfolio.md) — DICOM-viewer portfolio, React/Vite/TS, key layout and data facts

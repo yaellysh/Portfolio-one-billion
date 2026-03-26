@@ -1,0 +1,451 @@
+.dicom-viewer {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh / 0.92);
+  zoom: 0.92;
+  background: #1c1c1c;
+  color: #d4d4d4;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 11px;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 3px 6px;
+  background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
+  border-bottom: 2px solid #1a1a1a;
+  border-top: 1px solid #666;
+  flex-shrink: 0;
+  height: 38px;
+}
+
+.tb-sep {
+  width: 1px;
+  height: 24px;
+  background: linear-gradient(to bottom, #2a2a2a, #5a5a5a, #2a2a2a);
+  margin: 0 3px;
+}
+
+.tb-btn {
+  background: linear-gradient(to bottom, #555, #444);
+  border-top: 1px solid #6a6a6a;
+  border-left: 1px solid #5a5a5a;
+  border-right: 1px solid #2a2a2a;
+  border-bottom: 1px solid #222;
+  color: #ddd;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 2px;
+  height: 26px;
+  width: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tb-btn:hover {
+  background: linear-gradient(to bottom, #666, #555);
+  border-top-color: #888;
+}
+
+.tb-btn:active {
+  background: linear-gradient(to bottom, #333, #444);
+  border-top-color: #222;
+  border-bottom-color: #666;
+}
+
+.tb-btn.active {
+  background: linear-gradient(to bottom, #3a3a3a, #4a4a4a);
+  border-top: 1px solid #222;
+  border-bottom: 1px solid #6a6a6a;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.tb-label {
+  font-size: 10px;
+  font-weight: bold;
+  font-family: 'Segoe UI', sans-serif;
+  color: #ddd;
+  letter-spacing: 0;
+}
+
+.active-label {
+  color: #fff;
+}
+
+/* ── Main area ───────────────────────────────────────────────── */
+
+.dicom-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+
+.sidebar {
+  width: 195px;
+  flex-shrink: 0;
+  background: #191919;
+  border-right: 2px solid #0a0a0a;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.series-item {
+  padding: 5px 5px 4px;
+  border-bottom: 1px solid #222;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.series-item:hover {
+  background: #202020;
+}
+
+.series-label {
+  font-size: 10px;
+  color: #bbb;
+  padding: 0 2px 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Courier New', monospace;
+}
+
+.series-thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: black;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.series-thumb-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.series-count {
+  position: absolute;
+  bottom: 4px;
+  right: 6px;
+  font-size: 11px;
+  color: #ccc;
+  font-family: 'Courier New', monospace;
+}
+
+/* ── Viewport Grid ───────────────────────────────────────────── */
+
+.viewport-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1px;
+  background: #0a0a0a;
+  overflow: hidden;
+}
+
+/* ── Viewport Panel ──────────────────────────────────────────── */
+
+.viewport {
+  display: flex;
+  flex-direction: column;
+  background: #111;
+  border: 1px solid #252525;
+  cursor: crosshair;
+  overflow: hidden;
+}
+
+.viewport.selected {
+  border-color: #ffcc00;
+}
+
+.vp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 4px;
+  background: #222;
+  border-bottom: 1px solid #2e2e2e;
+  flex-shrink: 0;
+  height: 20px;
+}
+
+.vp-title {
+  font-size: 10px;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Courier New', monospace;
+}
+
+.vp-controls {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: 6px;
+}
+
+.vp-controls button {
+  background: none;
+  border: 1px solid #444;
+  color: #999;
+  font-size: 9px;
+  padding: 0 4px;
+  cursor: pointer;
+  height: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.vp-controls button:hover {
+  background: #3a3a3a;
+}
+
+.vp-btn-close {
+  color: #e05555 !important;
+  border-color: #5a2a2a !important;
+}
+
+.vp-body {
+  flex: 1;
+  position: relative;
+  background: black;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Metadata overlays ───────────────────────────────────────── */
+
+.meta {
+  position: absolute;
+  font-size: 9px;
+  color: #e0e0e0;
+  line-height: 1.45;
+  font-family: 'Courier New', monospace;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.meta.tl { top: 4px; left: 5px; }
+.meta.tr { top: 4px; right: 5px; text-align: right; }
+.meta.bl { bottom: 4px; left: 5px; }
+.meta.br { bottom: 4px; right: 5px; text-align: right; }
+
+
+/* ── Detail View ─────────────────────────────────────────────── */
+
+.detail-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.detail-viewport {
+  flex: 1;
+  position: relative;
+  background: black;
+  overflow: hidden;
+}
+
+.detail-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.scroll-hint {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.scroll-hint-text {
+  color: #e8e800;
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.05em;
+}
+
+.anno-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.back-btn {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: rgba(40, 40, 40, 0.85);
+  border: 1px solid #555;
+  color: #ccc;
+  font-size: 11px;
+  padding: 3px 12px;
+  cursor: pointer;
+  border-radius: 2px;
+  font-family: 'Courier New', monospace;
+}
+
+.back-btn:hover {
+  background: rgba(70, 70, 70, 0.9);
+  color: #fff;
+}
+
+/* ── DICOM Tags Panel ────────────────────────────────────────── */
+
+.tags-panel {
+  width: 420px;
+  min-width: 420px;
+  flex-shrink: 0;
+  background: #f0f0f0;
+  border-left: 2px solid #aaa;
+  display: flex;
+  flex-direction: column;
+  font-size: 11px;
+  color: #111;
+  overflow: hidden;
+}
+
+.tags-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 6px;
+  background: linear-gradient(to bottom, #d8d8d8, #c4c4c4);
+  border-bottom: 1px solid #aaa;
+  flex-shrink: 0;
+  height: 22px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #222;
+}
+
+.tags-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.tags-controls button {
+  background: linear-gradient(to bottom, #ddd, #c8c8c8);
+  border: 1px solid #999;
+  color: #333;
+  font-size: 10px;
+  padding: 0 4px;
+  cursor: pointer;
+  height: 14px;
+  line-height: 1;
+}
+
+.tags-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.tags-section {
+  border-bottom: 1px solid #ccc;
+  padding: 4px 0;
+  margin-bottom: 4px;
+}
+
+.tags-row {
+  display: flex;
+  padding: 2px 14px;
+  line-height: 1.6;
+}
+
+.tags-field {
+  width: 130px;
+  flex-shrink: 0;
+  color: #222;
+  font-size: 13px;
+}
+
+.tags-value {
+  color: #444;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tags-tabs {
+  display: flex;
+  border-top: 1px solid #aaa;
+  flex-shrink: 0;
+}
+
+.tags-tab {
+  flex: 1;
+  background: linear-gradient(to bottom, #d0d0d0, #c0c0c0);
+  border: none;
+  border-right: 1px solid #aaa;
+  color: #333;
+  font-size: 10px;
+  padding: 4px 2px;
+  cursor: pointer;
+}
+
+.tags-tab:last-child {
+  border-right: none;
+}
+
+.tags-tab.active {
+  background: linear-gradient(to bottom, #e8e8e8, #d8d8d8);
+  color: #000;
+  font-weight: bold;
+}
+
+/* ── Status Bar ──────────────────────────────────────────────── */
+
+.statusbar {
+  height: 22px;
+  background: #1e1e1e;
+  border-top: 1px solid #2e2e2e;
+  padding: 3px 10px;
+  font-size: 11px;
+  color: #999;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.statusbar-right {
+  color: #888;
+}
