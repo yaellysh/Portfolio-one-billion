@@ -301,6 +301,208 @@ const ANNOTATIONS: Anno[][] = [
     ],
 ]
 
+const DIALOG_ZOOM = 0.92
+
+// ── Shared drag/resize/clamp hook for Windows-style dialogs ──────────────────
+
+function useWinDialog(minW = 220, minH = 100) {
+  const [pos, setPos]   = useState<{x: number, y: number} | null>(null)
+  const [size, setSize] = useState<{w: number, h: number} | null>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const dragging  = useRef<{mouseX: number, mouseY: number, dialogX: number, dialogY: number} | null>(null)
+  const resizing  = useRef<{mouseX: number, mouseY: number, w: number, h: number} | null>(null)
+  const posRef    = useRef(pos)
+  posRef.current  = pos
+
+  useEffect(() => {
+    const el = dialogRef.current!
+    const parent = el.offsetParent as HTMLElement
+    const elRect = el.getBoundingClientRect()
+    const parentRect = parent.getBoundingClientRect()
+    setPos({
+      x: (elRect.left - parentRect.left) / DIALOG_ZOOM,
+      y: (elRect.top  - parentRect.top)  / DIALOG_ZOOM,
+    })
+  }, [])
+
+  const onTitleMouseDown = (e: React.MouseEvent) => {
+    if (!pos) return
+    dragging.current = { mouseX: e.clientX, mouseY: e.clientY, dialogX: pos.x, dialogY: pos.y }
+    e.preventDefault()
+  }
+
+  const onResizeMouseDown = (e: React.MouseEvent) => {
+    const el = dialogRef.current!
+    const rect = el.getBoundingClientRect()
+    resizing.current = { mouseX: e.clientX, mouseY: e.clientY, w: rect.width / DIALOG_ZOOM, h: rect.height / DIALOG_ZOOM }
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  useEffect(() => {
+    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, hi))
+    const onMove = (e: MouseEvent) => {
+      const el = dialogRef.current; if (!el) return
+      const parent = el.offsetParent as HTMLElement
+      const pR = parent.getBoundingClientRect(), eR = el.getBoundingClientRect()
+      const pW = pR.width / DIALOG_ZOOM, pH = pR.height / DIALOG_ZOOM
+      const eW = eR.width / DIALOG_ZOOM, eH = eR.height / DIALOG_ZOOM
+      if (dragging.current) {
+        const nx = dragging.current.dialogX + (e.clientX - dragging.current.mouseX) / DIALOG_ZOOM
+        const ny = dragging.current.dialogY + (e.clientY - dragging.current.mouseY) / DIALOG_ZOOM
+        setPos({ x: clamp(nx, 0, pW - eW), y: clamp(ny, 0, pH - eH) })
+      }
+      if (resizing.current) {
+        const cp = posRef.current
+        setSize({
+          w: clamp(resizing.current.w + (e.clientX - resizing.current.mouseX) / DIALOG_ZOOM, minW, cp ? pW - cp.x : pW),
+          h: clamp(resizing.current.h + (e.clientY - resizing.current.mouseY) / DIALOG_ZOOM, minH, cp ? pH - cp.y : pH),
+        })
+      }
+    }
+    const onUp = () => { dragging.current = null; resizing.current = null }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+  }, [minW, minH])
+
+  const dialogStyle = pos
+    ? { bottom: 'auto', left: pos.x, top: pos.y, ...(size ? { width: size.w, height: size.h } : {}) }
+    : { visibility: 'hidden' as const }
+
+  const ResizeHandle = () => (
+    <div onMouseDown={onResizeMouseDown}
+      style={{ position: 'absolute', bottom: 0, right: 0, width: 14, height: 14, cursor: 'nwse-resize', zIndex: 20 }}>
+      <svg width="14" height="14" viewBox="0 0 14 14" style={{ display: 'block' }}>
+        <line x1="4"  y1="13" x2="13" y2="4"  stroke="#999" strokeWidth="1.2"/>
+        <line x1="8"  y1="13" x2="13" y2="8"  stroke="#999" strokeWidth="1.2"/>
+        <line x1="12" y1="13" x2="13" y2="12" stroke="#999" strokeWidth="1.2"/>
+      </svg>
+    </div>
+  )
+
+  return { dialogRef, dialogStyle, onTitleMouseDown, ResizeHandle }
+}
+
+// ── Windows Error Dialog ──────────────────────────────────────────────────────
+
+function WinErrorDialog() {
+  const [visible, setVisible] = useState(true)
+  const { dialogRef, dialogStyle, onTitleMouseDown, ResizeHandle } = useWinDialog()
+
+  if (!visible) return null
+
+  return (
+    <div className="win-dialog" style={dialogStyle} ref={dialogRef}>
+      <div className="win-titlebar" onMouseDown={onTitleMouseDown} style={{ cursor: 'grab' }}>
+        <span className="win-title">DICOM Viewer</span>
+        <button className="win-close" onMouseDown={e => e.stopPropagation()} onClick={() => setVisible(false)}>✕</button>
+      </div>
+      <div className="win-body">
+        <div className="win-icon">✕</div>
+        <div className="win-content">
+          <div className="win-message">Can't load series "AngioRunOff 1.5 B31s" because the acquisition parameters are out of range.</div>
+          <div className="win-sub">Specify a valid reconstruction kernel.</div>
+        </div>
+      </div>
+      <div className="win-footer">
+        <button className="win-btn" onClick={() => setVisible(false)}>Close</button>
+      </div>
+      <ResizeHandle />
+    </div>
+  )
+}
+
+// ── Windows Panel Dialog ──────────────────────────────────────────────────────
+
+const PANELS = [
+  {
+    title: 'Overview',
+    content: `Subject ID: RAD-021
+Status: Active
+
+Profile:
+Full-stack developer and ML engineer focused on
+clinical AI systems, real-time inference, and
+scalable pipelines.`,
+  },
+  {
+    title: 'Experience',
+    content: `Findings:
+- Built full-stack clinical platform
+  (FHIR-based intake + transcription)
+- Designed microservices for real-time
+  condition extraction
+- Developed AI-assisted triage systems
+
+- Implemented surgical video segmentation
+  pipelines
+- Built real-time inference tools with
+  interactive overlays
+- Developed 3D DICOM reconstruction workflows`,
+  },
+  {
+    title: 'Systems',
+    content: `Frontend: React
+Backend:  Flask, Node.js
+Data:     PostgreSQL, pipelines
+
+ML & Imaging:
+  PyTorch, OpenCV, LLMs
+  DICOM, FHIR R4B
+
+Infrastructure:
+  AWS, GCP, Docker, Celery`,
+  },
+  {
+    title: 'Highlights & Next Steps',
+    content: `Highlights:
+ARIA 2025 — First Place
+University of Toronto — CS + Mathematics
+GPA: 3.8 / 4.0
+
+Focus:
+Clinical NLP, radiology data structuring,
+LLM-based systems aligned with FHIR
+
+Next:
+View projects and contact information.`,
+  },
+]
+
+function WinPanelDialog() {
+  const [visible, setVisible] = useState(true)
+  const [panel, setPanel] = useState(0)
+  const { dialogRef, dialogStyle, onTitleMouseDown, ResizeHandle } = useWinDialog(280, 160)
+
+  if (!visible) return null
+
+  const current = PANELS[panel]
+  const isFirst = panel === 0
+  const isLast  = panel === PANELS.length - 1
+
+  return (
+    <div className="win-dialog" style={{ ...dialogStyle, left: (dialogStyle as React.CSSProperties).left ?? 80, top: (dialogStyle as React.CSSProperties).top ?? 60 }} ref={dialogRef}>
+      <div className="win-titlebar" onMouseDown={onTitleMouseDown} style={{ cursor: 'grab' }}>
+        <span className="win-title">DICOM Viewer — Series {panel + 1}/{PANELS.length} — {current.title}</span>
+        <button className="win-close" onMouseDown={e => e.stopPropagation()} onClick={() => setVisible(false)}>✕</button>
+      </div>
+      <div className="win-body" style={{ display: 'block', padding: '12px 16px' }}>
+        <pre className="win-panel-pre">{current.content}</pre>
+      </div>
+      <div className="win-footer" style={{ justifyContent: 'space-between' }}>
+        <button className="win-btn" onClick={() => setPanel(p => p - 1)} disabled={isFirst}
+          style={{ opacity: isFirst ? 0.4 : 1 }}>← Previous</button>
+        {isLast
+          ? <button className="win-btn" onClick={() => setVisible(false)}>Close</button>
+          : <button className="win-btn" onClick={() => setPanel(p => p + 1)}>Next →</button>
+        }
+      </div>
+      <ResizeHandle />
+    </div>
+  )
+}
+
 function AnnotationOverlay({ frame }: { frame: number }) {
   const annos = ANNOTATIONS[frame] ?? []
   const Y = '#e8e800' // DICOM yellow
@@ -392,6 +594,9 @@ function DetailView({ onBack }: { onBack: () => void }) {
           <div>W: 630.00</div>
           <div>Zoom: 206%</div>
         </div>
+
+        {frame === 1 && <WinErrorDialog />}
+        {frame === 3 && <WinPanelDialog />}
 
         {/* scroll hint */}
         <div className="scroll-hint">
